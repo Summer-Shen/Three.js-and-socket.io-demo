@@ -18,6 +18,7 @@
   <body>
     <script src="js/three.min.js"></script>
     <script src="js/FirstPersonControls.js"></script>
+    <script src="js/socket.io.js"></script>
     <script>
       // Our Javascript will go here.
       // scene
@@ -118,6 +119,9 @@
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
+
+      // socket client
+      const socket = io("ws://localhost:3000");
     </script>
   </body>
 </html>
