@@ -10,8 +10,13 @@ app.get("/", function (req, res) {
 
 io.on("connection", function (socket) {
   console.log("client " + socket.id + " connected");
+  socket.on("player", function (data) {
+    data.socketid = socket.id;
+    socket.broadcast.emit("player", data);
+  });
   socket.on("disconnect", function () {
     console.log("client " + socket.id + " disconnected");
+    socket.broadcast.emit("offline", { socketid: socket.id });
   });
 });
 

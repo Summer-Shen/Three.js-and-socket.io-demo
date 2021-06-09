@@ -19,6 +19,7 @@
     <script src="js/three.min.js"></script>
     <script src="js/FirstPersonControls.js"></script>
     <script src="js/socket.io.js"></script>
+    <script src="js/GLTFLoader.js"></script>
     <script>
       // Our Javascript will go here.
       // scene
@@ -42,6 +43,9 @@
       // 向场景添加用于控制相机的Object
       scene.add(fpc.yawObject);
 
+      // socket client
+      const socket = io("ws://localhost:3000");
+
       // renderer
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -49,6 +53,10 @@
       let clock = new THREE.Clock();
       function render() {
         fpc.update(clock.getDelta());
+        socket.emit("player", {
+          position: fpc.yawObject.position,
+          rotation: fpc.yawObject.rotation,
+        });
         requestAnimationFrame(render);
         renderer.render(scene, camera);
       }
@@ -120,8 +128,40 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
-      // socket client
-      const socket = io("ws://localhost:3000");
+      // 客户端收到服务端传来的其他客户端的实时信息，并在自己的场景中更新
+      let playerMap = new Map();
+      socket.on("player", (data) => {
+        if (playerMap.has(data.socketid)) {
+          let model = playerMap.get(data.socketid);
+          model.position.set(data.position.x, data.position.y, data.position.z);
+          model.rotation.set(
+            data.rotation._x,
+            data.rotation._y + Math.PI / 2,
+            data.rotation._z
+          );
+        } else {
+          socket.emit("player", {
+            position: fpc.yawObject.position,
+            rotation: fpc.yawObject.rotation,
+          });
+          const loader = new THREE.GLTFLoader();
+          loader.load("./assets/models/duck.glb", (mesh) => {
+            //如果这个判断注释掉会怎么样，为什么
+            if (!playerMap.has(data.socketid)) {
+              mesh.scene.scale.set(10, 10, 10);
+              scene.add(mesh.scene);
+              playerMap.set(data.socketid, mesh.scene);
+              let model = playerMap.get(data.socketid);
+            }
+          });
+        }
+      });
+      socket.on("offline", (data) => {
+        if (playerMap.has(data.socketid)) {
+          scene.remove(playerMap.get(data.socketid));
+          playerMap.delete(data.socketid);
+        }
+      });
     </script>
   </body>
 </html>
