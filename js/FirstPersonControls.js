@@ -49,11 +49,14 @@ class FirstPersonControls {
       // Modify the virtual rotation instead of the real one
       this.yawObject.rotation.y -= movementX * 0.002;
       // this.pitchObject.rotation.y -= movementX * 0.002;
-      // 这样写地板也会跟着旋转，我们想要的效果是只对填空选择，地板是不变的
+      // 这样写地板也会跟着旋转，我们想要的效果是只对天空选择，地板是不变的
       this.pitchObject.rotation.x -= movementY * 0.002;
       // 这一步的目的是什么
       // 注释取消这一步，垂直移动效果不好
-      // this.pitchObject.rotation.x = Math.max( - Math.PI / 2, Math.min( Math.PI / 2, this.pitchObject.rotation.x ) );
+      this.pitchObject.rotation.x = Math.max(
+        -Math.PI / 2,
+        Math.min(Math.PI / 2, this.pitchObject.rotation.x)
+      );
     }
   }
 
