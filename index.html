@@ -43,25 +43,6 @@
       // 向场景添加用于控制相机的Object
       scene.add(fpc.yawObject);
 
-      // socket client
-      const socket = io("ws://localhost:3000");
-
-      // renderer
-      const renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
-      document.body.appendChild(renderer.domElement);
-      let clock = new THREE.Clock();
-      function render() {
-        fpc.update(clock.getDelta());
-        socket.emit("player", {
-          position: fpc.yawObject.position,
-          rotation: fpc.yawObject.rotation,
-        });
-        requestAnimationFrame(render);
-        renderer.render(scene, camera);
-      }
-      render();
-
       // soft white light
       const light = new THREE.AmbientLight(0xaaaaaa);
       scene.add(light);
@@ -128,6 +109,9 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
       }
 
+      // socket client
+      const socket = io("ws://localhost:3000");
+
       // 客户端收到服务端传来的其他客户端的实时信息，并在自己的场景中更新
       let playerMap = new Map();
       socket.on("player", (data) => {
@@ -162,6 +146,42 @@
           playerMap.delete(data.socketid);
         }
       });
+
+      // renderer
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+      document.body.appendChild(renderer.domElement);
+      let clock = new THREE.Clock();
+      function render() {
+        // 获取移动前位置
+        var currPos = fpc.yawObject.position.clone();
+        fpc.update(clock.getDelta());
+        // 如果碰撞，就把位置设为上一个位置
+        if (hasCollision()) {
+          fpc.yawObject.position.set(currPos.x, currPos.y, currPos.z);
+        }
+        socket.emit("player", {
+          position: fpc.yawObject.position,
+          rotation: fpc.yawObject.rotation,
+        });
+        requestAnimationFrame(render);
+        renderer.render(scene, camera);
+      }
+      render();
+
+      function hasCollision() {
+        for (let model of playerMap.values()) {
+          if (
+            Math.pow(model.position.x - fpc.yawObject.position.x, 2) +
+              Math.pow(model.position.y - fpc.yawObject.position.y, 2) +
+              Math.pow(model.position.z - fpc.yawObject.position.z, 2) <
+            100
+          ) {
+            return true;
+          }
+        }
+        return false;
+      }
     </script>
   </body>
 </html>
